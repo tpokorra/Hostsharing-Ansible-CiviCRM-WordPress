@@ -1,0 +1,122 @@
+---
+- hosts: civicrm
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    # see https://docs.ansible.com/ansible/latest/user_guide/become.html#risks-of-becoming-an-unprivileged-user
+    ansible_common_remote_group: "{{pac}}"
+    # avoid error: Failed to set permissions on the temporary files Ansible needs to create when becoming an unprivileged user
+    #allow_world_readable_tmpfiles: true
+
+  tasks:
+  #################################
+  ## setup the user, the domain, the database
+  #################################
+  - name: Create user, domain and database
+    import_tasks: tasks/hslamp.yml
+
+  - name: Sleep to avoid issue invalid user for temporary files
+    pause:
+      seconds: 10
+
+  #################################
+  ## install wordpress
+  #################################
+  - name: install wordpress
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    unarchive:
+      creates: /home/pacs/{{pac}}/users/{{user}}/wordpress
+      src: https://de.wordpress.org/latest-de_DE.tar.gz
+      remote_src: yes
+      dest: /home/pacs/{{pac}}/users/{{user}}
+
+  - name: drop htdocs-ssl
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    file:
+       path: "/home/pacs/{{pac}}/users/{{user}}/doms/{{domain}}/htdocs-ssl"
+       state: absent
+
+  - name: create symbolic link for htdocs-ssl
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    file:
+      src: "/home/pacs/{{pac}}/users/{{user}}/wordpress"
+      dest: "/home/pacs/{{pac}}/users/{{user}}/doms/{{domain}}/htdocs-ssl"
+      state: link
+
+  #################################
+  ## prepare configuration file
+  #################################
+  - name: copy config file
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    copy:
+      src: "/home/pacs/{{pac}}/users/{{user}}/wordpress/wp-config-sample.php"
+      remote_src: yes
+      dest: "/home/pacs/{{pac}}/users/{{user}}/wordpress/wp-config.php"
+  - name: set user name
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    lineinfile:
+      path: "/home/pacs/{{pac}}/users/{{user}}/wordpress/wp-config.php"
+      regexp: '^define\( ''DB_USER'','
+      line: "define( 'DB_USER', '{{pac}}_{{user}}' );"
+  - name: set database name
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    lineinfile:
+      path: "/home/pacs/{{pac}}/users/{{user}}/wordpress/wp-config.php"
+      regexp: '^define\( ''DB_NAME'','
+      line: "define( 'DB_NAME', '{{pac}}_{{user}}' );"
+  - name: set database password
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    lineinfile:
+      path: "/home/pacs/{{pac}}/users/{{user}}/wordpress/wp-config.php"
+      regexp: '^define\( ''DB_PASSWORD'','
+      line: "define( 'DB_PASSWORD', '{{password}}' );"
+  - name: set keys and salts
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    shell: |
+      secret=`openssl rand -base64 64 | tr -d '\n'`
+      sed -i "s#'AUTH_KEY',.*#'AUTH_KEY', '$secret');#g" wp-config.php
+      secret=`openssl rand -base64 64 | tr -d '\n'`
+      sed -i "s#'SECURE_AUTH_KEY',.*#'SECURE_AUTH_KEY', '$secret');#g" wp-config.php
+      secret=`openssl rand -base64 64 | tr -d '\n'`
+      sed -i "s#'LOGGED_IN_KEY',.*#'LOGGED_IN_KEY', '$secret');#g" wp-config.php
+      secret=`openssl rand -base64 64 | tr -d '\n'`
+      sed -i "s#'NONCE_KEY',.*#'NONCE_KEY', '$secret');#g" wp-config.php
+      secret=`openssl rand -base64 64 | tr -d '\n'`
+      sed -i "s#'AUTH_SALT',.*#'AUTH_SALT', '$secret');#g" wp-config.php
+      secret=`openssl rand -base64 64 | tr -d '\n'`
+      sed -i "s#'SECURE_AUTH_SALT',.*#'SECURE_AUTH_SALT', '$secret');#g" wp-config.php
+      secret=`openssl rand -base64 64 | tr -d '\n'`
+      sed -i "s#'LOGGED_IN_SALT',.*#'LOGGED_IN_SALT', '$secret');#g" wp-config.php
+      secret=`openssl rand -base64 64 | tr -d '\n'`
+      sed -i "s#'NONCE_SALT',.*#'NONCE_SALT', '$secret');#g" wp-config.php
+    args:
+      executable: /bin/bash
+      chdir: "/home/pacs/{{pac}}/users/{{user}}/wordpress"
+
+  ###################
+  ## install civicrm 
+  ###################
+  - name: install civicrm plugin
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    unarchive:
+      creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm
+      src: https://download.civicrm.org/civicrm-{{civicrm_version}}-wordpress.zip
+      remote_src: yes
+      dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/
+
+  - name: download civicrm translations
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    unarchive:
+      src: https://sourceforge.net/projects/civicrm/files/civicrm-stable/{{civicrm_version}}/civicrm-{{civicrm_version}}-l10n.tar.gz/download
+      remote_src: yes
+      dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm
+      creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm/civicrm/l10n

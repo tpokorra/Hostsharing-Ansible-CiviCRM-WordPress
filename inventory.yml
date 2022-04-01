@@ -1,0 +1,12 @@
+civicrm:
+  hosts:
+    xyz00:
+      ansible_ssh_host: xyz00.hostsharing.net
+      ansible_ssh_user: xyz00
+      pac: xyz00
+      domain: civicrm.example.org
+      user: civicrm
+      password: testpassw0rd_changeme
+
+      # see https://civicrm.org/download
+      civicrm_version: 5.47.3
