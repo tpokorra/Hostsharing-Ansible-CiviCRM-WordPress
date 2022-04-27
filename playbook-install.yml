@@ -100,6 +100,34 @@
       executable: /bin/bash
       chdir: "/home/pacs/{{pac}}/users/{{user}}/wordpress"
 
+  #######################
+  ## initialise wordpress
+  #######################
+  - name: download wp-cli
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    get_url:
+      # see https://wp-cli.org
+      url: https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+      dest: /home/pacs/{{pac}}/users/{{user}}/bin/wp-cli.phar
+      mode: '0700'
+
+  - name: create site with admin user
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    shell: |
+      $HOME/bin/wp-cli.phar core install \
+        --url='{{ domain }}' --title='{{ sitename }}' \
+        --allow-root --no-color --path='/home/pacs/{{pac}}/users/{{user}}/wordpress' \
+        --admin_name='{{ adminname }}' \
+        --admin_email='{{ adminemail }}' \
+        --admin_password='{{ adminpwd }}' || exit -1
+      touch /home/pacs/{{pac}}/users/{{user}}/.wordpressinitialized
+    args:
+      executable: /bin/bash
+      chdir: "/home/pacs/{{pac}}/users/{{user}}/wordpress"
+      creates: "/home/pacs/{{pac}}/users/{{user}}/.wordpressinitialized"
+
   ###################
   ## install civicrm 
   ###################
@@ -120,3 +148,14 @@
       remote_src: yes
       dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm
       creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm/civicrm/l10n
+
+  - name: activate civicrm
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    shell: |
+      $HOME/bin/wp-cli.phar plugin activate civicrm || exit -1
+      touch /home/pacs/{{pac}}/users/{{user}}/.civicrmactivated
+    args:
+      executable: /bin/bash
+      chdir: "/home/pacs/{{pac}}/users/{{user}}/wordpress"
+      creates: "/home/pacs/{{pac}}/users/{{user}}/.civicrmactivated"
