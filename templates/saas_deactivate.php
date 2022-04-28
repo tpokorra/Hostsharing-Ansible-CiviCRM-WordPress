@@ -23,7 +23,7 @@ if (!is_run_from_cli()) {
 }
 
 try {
-    $pdo = new PDO('mysql:host=localhost;dbname='.$DB_NAME, $DB_USER, $DB_PASSWORD);
+    $pdo = new PDO('mysql:host=localhost;dbname='.DB_NAME, DB_USER, DB_PASSWORD);
     # deactivate all users
     $sql = "update wp_usermeta set meta_value=CONCAT('disabled',meta_value) where meta_key='wp_capabilities' and meta_value NOT LIKE 'disabled%'";
     $statement = $pdo->prepare($sql);

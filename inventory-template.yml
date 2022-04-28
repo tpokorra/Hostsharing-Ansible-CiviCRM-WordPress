@@ -1,6 +1,6 @@
 civicrm:
   hosts:
-    {{pac}}:
+    {{pac}}-{{username}}:
       ansible_ssh_host: {{pac}}.hostsharing.net
       ansible_ssh_user: {{pac}}
       pac: {{pac}}
@@ -15,3 +15,6 @@ civicrm:
 
       # see https://civicrm.org/download
       civicrm_version: 5.48.2
+
+      SaasActivationPassword: {{SaasActivationPassword}}
+      SaasInstanceStatus: {{SaasInstanceStatus}}
