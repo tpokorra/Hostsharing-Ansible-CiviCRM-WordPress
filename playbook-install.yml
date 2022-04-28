@@ -19,6 +19,31 @@
       seconds: 10
 
   #################################
+  ## install useful helper scripts
+  #################################
+  - name: create bin directory
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    file:
+      path: "/home/pacs/{{pac}}/users/{{user}}/bin"
+      state: directory
+      mode: 0744
+
+  - name: download wp-cli
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    get_url:
+      # see https://wp-cli.org
+      url: https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+      dest: /home/pacs/{{pac}}/users/{{user}}/bin/wp-cli.phar
+      mode: '0700'
+
+  - name: upload mysql script
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    template: dest="/home/pacs/{{pac}}/users/{{user}}/bin/mysql.sh" src="templates/mysql.sh" mode=0700
+
+  #################################
   ## install wordpress
   #################################
   - name: install wordpress
@@ -103,15 +128,6 @@
   #######################
   ## initialise wordpress
   #######################
-  - name: download wp-cli
-    become: yes
-    become_user: "{{pac}}-{{user}}"
-    get_url:
-      # see https://wp-cli.org
-      url: https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
-      dest: /home/pacs/{{pac}}/users/{{user}}/bin/wp-cli.phar
-      mode: '0700'
-
   - name: create site with admin user
     become: yes
     become_user: "{{pac}}-{{user}}"
