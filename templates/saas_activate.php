@@ -1,7 +1,5 @@
 <?php
 
-include "/home/pacs/{{pac}}/users/{{user}}/wordpress/wp-config.php";
-
 function Get($index, $defaultValue) {
   return isset($_GET[$index]) ? $_GET[$index] : $defaultValue;
 }
@@ -19,7 +17,8 @@ try {
     exit(1);
   }
 
-  $pdo = new PDO('mysql:host=localhost;dbname='.DB_NAME, DB_USER, DB_PASSWORD);
+  $pdo = new PDO('mysql:host=localhost;dbname={{pac}}_{{user}}', '{{pac}}_{{user}}', '{{password}}');
+  $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
   $sql = "update wp_usermeta set meta_value=REPLACE(meta_value,'disabled','') where meta_key='wp_capabilities' and user_id=1 and meta_value LIKE 'disabled%'";
   $statement = $pdo->prepare($sql);
   $statement->execute();
