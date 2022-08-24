@@ -18,3 +18,5 @@ civicrm:
 
       SaasActivationPassword: {{SaasActivationPassword}}
       SaasInstanceStatus: {{SaasInstanceStatus}}
+
+      random_minute: "{{RandomMinute}}"

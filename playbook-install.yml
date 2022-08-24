@@ -187,6 +187,6 @@
     become_user: "{{pac}}-{{user}}"
     cron:
       name: "run wordpress plugin and theme updates"
-      hour: 5
+      hour: "5"
       minute: "{{random_minute}}"
       job: "cd /home/pacs/{{pac}}/users/{{user}}/wordpress && ~/bin/wp-cli.phar plugin update --all && ~/bin/wp-cli.phar theme update --all"

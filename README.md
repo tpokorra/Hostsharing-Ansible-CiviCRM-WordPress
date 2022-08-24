@@ -33,7 +33,9 @@ The option -i can be used to read this inventory file instead of the /etc/ansibl
 
 Now we can reach our site via:
 
-    https://civicrm.example.org
+    https://civicrm.example.org/wp-login
+
+You need to click the button "Install CiviCRM" once.
 
 --- Open Source Hosting ---
  https://www.hostsharing.net

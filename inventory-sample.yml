@@ -15,3 +15,5 @@ civicrm:
 
       # see https://civicrm.org/download
       civicrm_version: 5.48.2
+
+      random_minute: "23"
