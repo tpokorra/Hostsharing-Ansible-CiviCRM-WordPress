@@ -1,0 +1,126 @@
+---
+- hosts: civicrm
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    date: "{{ lookup('pipe', 'date +\"%Y%m%d\"') }}"
+
+  # does not work: wp civicrm upgrade --zipfile ../Downloads/civicrm-5.48.0-wordpress.zip
+  # see https://lab.civicrm.org/dev/wordpress/-/issues/123
+
+  # see https://docs.civicrm.org/sysadmin/en/latest/upgrade/wordpress/
+
+  tasks:
+  - name: put site into maintenance mode
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    shell: |
+      $HOME/bin/wp-cli.phar maintenance-mode activate || exit -1
+    args:
+      executable: /bin/bash
+      chdir: "/home/pacs/{{pac}}/users/{{user}}/wordpress"
+
+  - name: update wordpress core
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    shell: |
+      $HOME/bin/wp-cli.phar core update || exit -1
+    args:
+      executable: /bin/bash
+      chdir: "/home/pacs/{{pac}}/users/{{user}}/wordpress"
+
+  - name: Check if the backup already exists
+    stat:
+      path: /home/pacs/{{pac}}/users/{{user}}/backup-civicrm-{{date}}.tar.gz
+    register: stat_result
+
+  - name: backup civicrm if there is no backup yet for today
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    shell: |
+      tar czf /home/pacs/{{pac}}/users/{{user}}/backup-civicrm-{{date}}.tar.gz wp-content/plugins/civicrm wp-content/uploads/civicrm/civicrm.settings.php || exit -1
+    args:
+      executable: /bin/bash
+      chdir: "/home/pacs/{{pac}}/users/{{user}}/wordpress"
+    when: not stat_result.stat.exists
+
+  - name: drop civi plugin
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    file:
+      path: "/home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm"
+      state: absent
+
+  - name: install civicrm plugin
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    unarchive:
+      creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm
+      src: https://download.civicrm.org/civicrm-{{civicrm_version}}-wordpress.zip
+      remote_src: yes
+      dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/
+
+  - name: download civicrm translations
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    unarchive:
+      src: https://sourceforge.net/projects/civicrm/files/civicrm-stable/{{civicrm_version}}/civicrm-{{civicrm_version}}-l10n.tar.gz/download
+      #src: https://download.pokorra.de/cache/202204/civicrm-{{civicrm_version}}-l10n.tar.gz
+      remote_src: yes
+      dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm
+      creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm/civicrm/l10n
+
+  - name: Capture all cached files
+    find:
+      paths: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/uploads/civicrm/templates_c
+      excludes: 
+        - ".htaccess"
+    register: cached_files
+
+  - name: Delete cached files
+    file:
+      path: "{{ item.path }}"
+      state: absent
+    with_items: "{{ cached_files['files'] }}"
+
+  # TODO: restore CiviCRM extensions from backup
+TODO
+
+
+  - name: activate civicrm
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    shell: |
+      $HOME/bin/wp-cli.phar plugin activate civicrm || exit -1
+      touch /home/pacs/{{pac}}/users/{{user}}/.civicrmactivated
+    args:
+      executable: /bin/bash
+      chdir: "/home/pacs/{{pac}}/users/{{user}}/wordpress"
+      creates: "/home/pacs/{{pac}}/users/{{user}}/.civicrmactivated"
+
+  - name: download cv helper tool
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    get_url:
+      url: https://download.civicrm.org/cv/cv.phar
+      dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/cv.phar
+      mode: '0700'
+
+  - name: update CiviCRM with cv
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    shell: |
+      ./cv.phar upgrade:db || exit -1
+      # clear cache
+      ./cv.phar flush || exit -1
+    args:
+      executable: /bin/bash
+      chdir: "/home/pacs/{{pac}}/users/{{user}}/wordpress"
+
+  - name: put site out of maintenance mode
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    shell: |
+      $HOME/bin/wp-cli.phar maintenance-mode deactivate || exit -1
+    args:
+      executable: /bin/bash
+      chdir: "/home/pacs/{{pac}}/users/{{user}}/wordpress"
