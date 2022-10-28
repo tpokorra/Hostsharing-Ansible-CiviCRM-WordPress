@@ -190,3 +190,37 @@
       hour: "5"
       minute: "{{random_minute}}"
       job: "cd /home/pacs/{{pac}}/users/{{user}}/wordpress && ~/bin/wp-cli.phar plugin update --all && ~/bin/wp-cli.phar theme update --all"
+
+
+  ################################################
+  ## add extensions for SEPA direct debit and BIC
+  ################################################
+  - name: start task for sepa direct debit
+    debug: msg="start here"
+
+  - name: install extension SEPA direct debit integration with civicrm
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    unarchive:
+      creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm/civicrm/ext/org.project60.sepa-master
+      src: https://github.com/Project60/org.project60.sepa/archive/refs/heads/master.tar.gz
+      remote_src: yes
+      dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm/civicrm/ext
+
+  - name: install extension SEPA direct debit payment processor
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    unarchive:
+      creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm/civicrm/ext/org.project60.sepapp-master
+      src: https://github.com/Project60/org.project60.sepapp/archive/refs/heads/master.tar.gz
+      remote_src: yes
+      dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm/civicrm/ext
+
+  - name: install extension Little BIC extension
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    unarchive:
+      creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm/civicrm/ext/org.project60.bic-master
+      src: https://github.com/Project60/org.project60.bic/archive/refs/heads/master.tar.gz
+      remote_src: yes
+      dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm/civicrm/ext
