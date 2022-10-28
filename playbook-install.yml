@@ -190,3 +190,72 @@
       hour: "5"
       minute: "{{random_minute}}"
       job: "cd /home/pacs/{{pac}}/users/{{user}}/wordpress && ~/bin/wp-cli.phar plugin update --all && ~/bin/wp-cli.phar theme update --all"
+
+
+  ############################################################
+  ## securing the backend and adding proxied domain for forms
+  ############################################################
+  - name: upload htaccess for the backend to deny access for unprivileged IP addresses
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    template: dest="/home/pacs/{{pac}}/users/{{user}}/doms/{{domain}}/.htaccess" src="templates/htaccess_crm" mode=0644
+
+  - name: setup the domain for the forms
+    hsdomain.js: name="{{forms_domain}}" owner="{{pac}}-{{user}}" exists="true"
+
+  - name: upload htaccess for the forms domain to allow specific queries
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    template: dest="/home/pacs/{{pac}}/users/{{user}}/doms/{{forms_domain}}/.htaccess" src="templates/htaccess_forms" mode=0644
+
+  - name: create directory for proxy
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    file:
+      path: "/home/pacs/{{pac}}/users/{{user}}/proxy"
+      state: directory
+      mode: 0755
+
+  # original: https://github.com/zounar/php-proxy/
+  # our branch: https://github.com/SolidCharity/php-proxy/tree/TP202209-work
+  - name: download our own branch of php-proxy
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    unarchive:
+      creates: /home/pacs/{{pac}}/users/{{user}}/proxy/Proxy.php
+      src: https://github.com/SolidCharity/php-proxy/archive/refs/heads/TP202209-work.tar.gz
+      remote_src: yes
+      dest: /home/pacs/{{pac}}/users/{{user}}/proxy
+      extra_opts: [--strip-components=1]
+
+  - name: upload php proxy configuration file
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    template: dest="/home/pacs/{{pac}}/users/{{user}}/proxy/config.php" src="templates/proxy.config.php" mode=0644
+
+  - name: drop htdocs-ssl of forms domain
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    file:
+       path: "/home/pacs/{{pac}}/users/{{user}}/doms/{{forms_domain}}/htdocs-ssl"
+       state: absent
+
+  - name: create symbolic link for htdocs-ssl for the forms domain
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    file:
+      src: "/home/pacs/{{pac}}/users/{{user}}/proxy"
+      dest: "/home/pacs/{{pac}}/users/{{user}}/doms/{{forms_domain}}/htdocs-ssl"
+      state: link
+
+  # our proxy expects the permalinks in this format: day and name
+  - name: change option for permalinks to use names
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    shell: |
+      $HOME/bin/wp-cli.phar option set permalink_structure "/%year%/%monthnum%/%day%/%postname%/" || exit -1
+      touch /home/pacs/{{pac}}/users/{{user}}/.civicrm_permalinks_set
+    args:
+      executable: /bin/bash
+      chdir: "/home/pacs/{{pac}}/users/{{user}}/wordpress"
+      creates: "/home/pacs/{{pac}}/users/{{user}}/.civicrm_permalinks_set"
