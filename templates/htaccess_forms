@@ -13,7 +13,7 @@ RewriteRule . https://{{www_domain}}/ [R=302,L]
 
 # we assume the setting "day and name" for the permalink_structure
 # if any of these conditions is met, then return a 403 http error
-RewriteCond %{QUERY_STRING} !^page_id=[0-9]+&civiwp=CiviCRM&q=civicrm%2Fajax%2Frest.*$
+RewriteCond %{REQUEST_URI} !^/civicrm/ajax/rest.*$
 RewriteCond %{REQUEST_URI} !^/civicrm/contribute/transact/.*$
 RewriteCond %{REQUEST_URI} !^/civicrm/payment/form/.*$
 RewriteCond %{REQUEST_URI} !^/?favicon\.ico$
