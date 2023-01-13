@@ -91,8 +91,8 @@
       state: absent
     with_items: "{{ cached_files['files'] }}"
 
-  # TODO: restore CiviCRM extensions from backup
-  #TODO
+  # TODO: CiviCRM extensions should be installed in wp-content/uploads/civicrm/ext
+  # TODO: Update the extensions???
 
 
   - name: activate civicrm
