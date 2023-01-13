@@ -56,7 +56,7 @@
       remote_src: yes
       dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/
 
-  - name: download civicrm translations
+  - name: download civicrm translations directly
     become: yes
     unarchive:
       src: https://sourceforge.net/projects/civicrm/files/civicrm-stable/{{civicrm_version}}/civicrm-{{civicrm_version}}-l10n.tar.gz/download
@@ -64,6 +64,17 @@
       remote_src: yes
       dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm
       creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm/civicrm/l10n
+    when: url_proxy is not defined
+
+  - name: download civicrm translations from proxy
+    become: yes
+    unarchive:
+      src: "{{url_proxy}}/civicrm-{{civicrm_version}}-l10n.tar.gz"
+      remote_src: yes
+      dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm
+      extra_opts: [--strip-components=1] # to avoid the civicrm directory
+      creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm/civicrm/l10n
+    when: url_proxy is defined
 
   - name: Capture all cached files
     become: yes
