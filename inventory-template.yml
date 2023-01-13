@@ -14,9 +14,11 @@ civicrm:
       sitename: "Mein CiviCRM"
 
       # see https://civicrm.org/download
-      civicrm_version: 5.54.1
+      civicrm_version: 5.56.2
 
       SaasActivationPassword: {{SaasActivationPassword}}
       SaasInstanceStatus: {{SaasInstanceStatus}}
 
       random_minute: "{{RandomMinute}}"
+
+      url_proxy: https://proxy.solidcharity.com
