@@ -14,7 +14,7 @@ civicrm:
       sitename: "Mein CiviCRM"
 
       # see https://civicrm.org/download
-      civicrm_version: 5.56.2
+      civicrm_version: 5.59.1
 
       SaasActivationPassword: {{SaasActivationPassword}}
       SaasInstanceStatus: {{SaasInstanceStatus}}
