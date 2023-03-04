@@ -1,5 +1,6 @@
 ---
 - hosts: civicrm
+  become_user: "{{pac}}-{{user}}"
   vars:
     ansible_python_interpreter: /usr/bin/python3
     # see https://docs.ansible.com/ansible/latest/user_guide/become.html#risks-of-becoming-an-unprivileged-user
@@ -23,7 +24,6 @@
   #################################
   - name: create bin directory
     become: yes
-    become_user: "{{pac}}-{{user}}"
     file:
       path: "/home/pacs/{{pac}}/users/{{user}}/bin"
       state: directory
@@ -31,7 +31,6 @@
 
   - name: download wp-cli
     become: yes
-    become_user: "{{pac}}-{{user}}"
     get_url:
       # see https://wp-cli.org
       url: https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
@@ -40,7 +39,6 @@
 
   - name: upload mysql script
     become: yes
-    become_user: "{{pac}}-{{user}}"
     template: dest="/home/pacs/{{pac}}/users/{{user}}/bin/mysql.sh" src="templates/mysql.sh" mode=0700
 
   #################################
@@ -48,7 +46,6 @@
   #################################
   - name: install wordpress
     become: yes
-    become_user: "{{pac}}-{{user}}"
     unarchive:
       creates: /home/pacs/{{pac}}/users/{{user}}/wordpress
       src: https://de.wordpress.org/latest-de_DE.tar.gz
@@ -57,14 +54,12 @@
 
   - name: drop htdocs-ssl
     become: yes
-    become_user: "{{pac}}-{{user}}"
     file:
        path: "/home/pacs/{{pac}}/users/{{user}}/doms/{{domain}}/htdocs-ssl"
        state: absent
 
   - name: create symbolic link for htdocs-ssl
     become: yes
-    become_user: "{{pac}}-{{user}}"
     file:
       src: "/home/pacs/{{pac}}/users/{{user}}/wordpress"
       dest: "/home/pacs/{{pac}}/users/{{user}}/doms/{{domain}}/htdocs-ssl"
@@ -75,35 +70,30 @@
   #################################
   - name: copy config file
     become: yes
-    become_user: "{{pac}}-{{user}}"
     copy:
       src: "/home/pacs/{{pac}}/users/{{user}}/wordpress/wp-config-sample.php"
       remote_src: yes
       dest: "/home/pacs/{{pac}}/users/{{user}}/wordpress/wp-config.php"
   - name: set user name
     become: yes
-    become_user: "{{pac}}-{{user}}"
     lineinfile:
       path: "/home/pacs/{{pac}}/users/{{user}}/wordpress/wp-config.php"
       regexp: '^define\( ''DB_USER'','
       line: "define( 'DB_USER', '{{pac}}_{{user}}' );"
   - name: set database name
     become: yes
-    become_user: "{{pac}}-{{user}}"
     lineinfile:
       path: "/home/pacs/{{pac}}/users/{{user}}/wordpress/wp-config.php"
       regexp: '^define\( ''DB_NAME'','
       line: "define( 'DB_NAME', '{{pac}}_{{user}}' );"
   - name: set database password
     become: yes
-    become_user: "{{pac}}-{{user}}"
     lineinfile:
       path: "/home/pacs/{{pac}}/users/{{user}}/wordpress/wp-config.php"
       regexp: '^define\( ''DB_PASSWORD'','
       line: "define( 'DB_PASSWORD', '{{password}}' );"
   - name: set keys and salts
     become: yes
-    become_user: "{{pac}}-{{user}}"
     shell: |
       secret=`openssl rand -base64 64 | tr -d '\n'`
       sed -i "s#'AUTH_KEY',.*#'AUTH_KEY', '$secret');#g" wp-config.php
@@ -130,7 +120,6 @@
   #######################
   - name: create site with admin user
     become: yes
-    become_user: "{{pac}}-{{user}}"
     shell: |
       $HOME/bin/wp-cli.phar core install \
         --url='{{ domain }}' --title='{{ sitename }}' \
@@ -149,26 +138,34 @@
   ###################
   - name: install civicrm plugin
     become: yes
-    become_user: "{{pac}}-{{user}}"
     unarchive:
       creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm
       src: https://download.civicrm.org/civicrm-{{civicrm_version}}-wordpress.zip
       remote_src: yes
       dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/
 
-  - name: download civicrm translations
+  - name: download civicrm translations directly
     become: yes
-    become_user: "{{pac}}-{{user}}"
     unarchive:
       src: https://sourceforge.net/projects/civicrm/files/civicrm-stable/{{civicrm_version}}/civicrm-{{civicrm_version}}-l10n.tar.gz/download
       #src: https://download.pokorra.de/cache/202204/civicrm-{{civicrm_version}}-l10n.tar.gz
       remote_src: yes
       dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm
       creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm/civicrm/l10n
+    when: url_proxy is not defined
+
+  - name: download civicrm translations from proxy
+    become: yes
+    unarchive:
+      src: "{{url_proxy}}/civicrm-{{civicrm_version}}-l10n.tar.gz"
+      remote_src: yes
+      dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm
+      extra_opts: [--strip-components=1] # to avoid the civicrm directory
+      creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm/civicrm/l10n
+    when: url_proxy is defined
 
   - name: activate civicrm
     become: yes
-    become_user: "{{pac}}-{{user}}"
     shell: |
       $HOME/bin/wp-cli.phar plugin activate civicrm || exit -1
       touch /home/pacs/{{pac}}/users/{{user}}/.civicrmactivated
@@ -184,13 +181,16 @@
     # https://developer.wordpress.org/cli/commands/plugin/update/
     # https://developer.wordpress.org/cli/commands/theme/update/
     become: yes
-    become_user: "{{pac}}-{{user}}"
     cron:
       name: "run wordpress plugin and theme updates"
       hour: "5"
       minute: "{{random_minute}}"
       job: "cd /home/pacs/{{pac}}/users/{{user}}/wordpress && ~/bin/wp-cli.phar plugin update --all && ~/bin/wp-cli.phar theme update --all"
 
+# TODO: add cronuser.
+# see https://docs.civicrm.org/sysadmin/en/latest/setup/jobs/#choosing-a-cms-user
+
+# TODO: add cronjob:
 
   ############################################################
   ## securing the backend and adding proxied domain for forms
