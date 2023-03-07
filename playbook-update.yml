@@ -1,5 +1,6 @@
 ---
 - hosts: civicrm
+  become_user: "{{pac}}-{{user}}"
   vars:
     ansible_python_interpreter: /usr/bin/python3
     date: "{{ lookup('pipe', 'date +\"%Y%m%d\"') }}"
@@ -12,16 +13,14 @@
   tasks:
   - name: put site into maintenance mode
     become: yes
-    become_user: "{{pac}}-{{user}}"
     shell: |
-      $HOME/bin/wp-cli.phar maintenance-mode activate || exit -1
+      $HOME/bin/wp-cli.phar maintenance-mode activate || exit 0
     args:
       executable: /bin/bash
       chdir: "/home/pacs/{{pac}}/users/{{user}}/wordpress"
 
   - name: update wordpress core
     become: yes
-    become_user: "{{pac}}-{{user}}"
     shell: |
       $HOME/bin/wp-cli.phar core update || exit -1
     args:
@@ -29,13 +28,13 @@
       chdir: "/home/pacs/{{pac}}/users/{{user}}/wordpress"
 
   - name: Check if the backup already exists
+    become: yes
     stat:
       path: /home/pacs/{{pac}}/users/{{user}}/backup-civicrm-{{date}}.tar.gz
     register: stat_result
 
   - name: backup civicrm if there is no backup yet for today
     become: yes
-    become_user: "{{pac}}-{{user}}"
     shell: |
       tar czf /home/pacs/{{pac}}/users/{{user}}/backup-civicrm-{{date}}.tar.gz wp-content/plugins/civicrm wp-content/uploads/civicrm/civicrm.settings.php || exit -1
     args:
@@ -45,31 +44,40 @@
 
   - name: drop civi plugin
     become: yes
-    become_user: "{{pac}}-{{user}}"
     file:
       path: "/home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm"
       state: absent
 
   - name: install civicrm plugin
     become: yes
-    become_user: "{{pac}}-{{user}}"
     unarchive:
       creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm
       src: https://download.civicrm.org/civicrm-{{civicrm_version}}-wordpress.zip
       remote_src: yes
       dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/
 
-  - name: download civicrm translations
+  - name: download civicrm translations directly
     become: yes
-    become_user: "{{pac}}-{{user}}"
     unarchive:
       src: https://sourceforge.net/projects/civicrm/files/civicrm-stable/{{civicrm_version}}/civicrm-{{civicrm_version}}-l10n.tar.gz/download
       #src: https://download.pokorra.de/cache/202204/civicrm-{{civicrm_version}}-l10n.tar.gz
       remote_src: yes
       dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm
       creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm/civicrm/l10n
+    when: url_proxy is not defined
+
+  - name: download civicrm translations from proxy
+    become: yes
+    unarchive:
+      src: "{{url_proxy}}/civicrm-{{civicrm_version}}-l10n.tar.gz"
+      remote_src: yes
+      dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm
+      extra_opts: [--strip-components=1] # to avoid the civicrm directory
+      creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm/civicrm/l10n
+    when: url_proxy is defined
 
   - name: Capture all cached files
+    become: yes
     find:
       paths: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/uploads/civicrm/templates_c
       excludes: 
@@ -77,18 +85,18 @@
     register: cached_files
 
   - name: Delete cached files
+    become: yes
     file:
       path: "{{ item.path }}"
       state: absent
     with_items: "{{ cached_files['files'] }}"
 
-  # TODO: restore CiviCRM extensions from backup
-TODO
+  # TODO: CiviCRM extensions should be installed in wp-content/uploads/civicrm/ext
+  # TODO: Update the extensions???
 
 
   - name: activate civicrm
     become: yes
-    become_user: "{{pac}}-{{user}}"
     shell: |
       $HOME/bin/wp-cli.phar plugin activate civicrm || exit -1
       touch /home/pacs/{{pac}}/users/{{user}}/.civicrmactivated
@@ -99,28 +107,27 @@ TODO
 
   - name: download cv helper tool
     become: yes
-    become_user: "{{pac}}-{{user}}"
     get_url:
       url: https://download.civicrm.org/cv/cv.phar
       dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/cv.phar
       mode: '0700'
 
+  # need to activate site to avoid issue with upgrades: Call to undefined function trailingslashit()
+  - name: put site out of maintenance mode
+    become: yes
+    shell: |
+      $HOME/bin/wp-cli.phar maintenance-mode deactivate || exit -1
+    args:
+      executable: /bin/bash
+      chdir: "/home/pacs/{{pac}}/users/{{user}}/wordpress"
+
   - name: update CiviCRM with cv
     become: yes
-    become_user: "{{pac}}-{{user}}"
     shell: |
-      ./cv.phar upgrade:db || exit -1
+      ./cv.phar upgrade:db --no-interaction || exit -1
       # clear cache
       ./cv.phar flush || exit -1
     args:
       executable: /bin/bash
       chdir: "/home/pacs/{{pac}}/users/{{user}}/wordpress"
 
-  - name: put site out of maintenance mode
-    become: yes
-    become_user: "{{pac}}-{{user}}"
-    shell: |
-      $HOME/bin/wp-cli.phar maintenance-mode deactivate || exit -1
-    args:
-      executable: /bin/bash
-      chdir: "/home/pacs/{{pac}}/users/{{user}}/wordpress"
