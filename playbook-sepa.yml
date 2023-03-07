@@ -20,43 +20,43 @@
     become: yes
     become_user: "{{pac}}-{{user}}"
     unarchive:
-      creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm/civicrm/ext/org.project60.sepa-master
+      creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/uploads/civicrm/ext/org.project60.sepa-master
       src: https://github.com/Project60/org.project60.sepa/archive/refs/heads/master.tar.gz
       remote_src: yes
-      dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm/civicrm/ext
+      dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/uploads/civicrm/ext
 
   - name: install extension SEPA direct debit payment processor
     become: yes
     become_user: "{{pac}}-{{user}}"
     unarchive:
-      creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm/civicrm/ext/org.project60.sepapp-master
+      creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/uploads/civicrm/ext/org.project60.sepapp-master
       src: https://github.com/Project60/org.project60.sepapp/archive/refs/heads/master.tar.gz
       remote_src: yes
-      dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm/civicrm/ext
+      dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/uploads/civicrm/ext
 
   - name: install extension Little BIC extension
     become: yes
     become_user: "{{pac}}-{{user}}"
     unarchive:
-      creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm/civicrm/ext/org.project60.bic-master
+      creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/uploads/civicrm/ext/org.project60.bic-master
       src: https://github.com/Project60/org.project60.bic/archive/refs/heads/master.tar.gz
       remote_src: yes
-      dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm/civicrm/ext
+      dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/uploads/civicrm/ext
 
   - name: install extension Recurring Buttons
     become: yes
     become_user: "{{pac}}-{{user}}"
     unarchive:
-      creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm/civicrm/ext/recurringbuttons-master
+      creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/uploads/civicrm/ext/recurringbuttons-master
       src: https://lab.civicrm.org/extensions/recurringbuttons/-/archive/master/recurringbuttons-master.tar.gz
       remote_src: yes
-      dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm/civicrm/ext
+      dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/uploads/civicrm/ext
 
   - name: install extension Radio Buttons
     become: yes
     become_user: "{{pac}}-{{user}}"
     unarchive:
-      creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm/civicrm/ext/radiobuttons-master
+      creates: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/uploads/civicrm/ext/radiobuttons-master
       src: https://lab.civicrm.org/extensions/radiobuttons/-/archive/master/radiobuttons-master.tar.gz
       remote_src: yes
-      dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/plugins/civicrm/civicrm/ext
+      dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/wp-content/uploads/civicrm/ext
