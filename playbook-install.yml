@@ -37,9 +37,16 @@
       dest: /home/pacs/{{pac}}/users/{{user}}/bin/wp-cli.phar
       mode: '0700'
 
-  - name: upload mysql script
+  - name: download cv helper tool
     become: yes
-    template: dest="/home/pacs/{{pac}}/users/{{user}}/bin/mysql.sh" src="templates/mysql.sh" mode=0700
+    get_url:
+      url: https://download.civicrm.org/cv/cv.phar
+      dest: /home/pacs/{{pac}}/users/{{user}}/bin/cv.phar
+      mode: '0700'
+
+  - name: upload mysql configuration file
+    become: yes
+    template: dest="/home/pacs/{{pac}}/users/{{user}}/.my.cnf" src="templates/my.cnf" mode=0600
 
   #################################
   ## install wordpress
@@ -187,7 +194,10 @@
       minute: "{{random_minute}}"
       job: "cd /home/pacs/{{pac}}/users/{{user}}/wordpress && ~/bin/wp-cli.phar plugin update --all && ~/bin/wp-cli.phar theme update --all"
 
-# TODO: add cronuser.
-# see https://docs.civicrm.org/sysadmin/en/latest/setup/jobs/#choosing-a-cms-user
-
-# TODO: add cronjob:
+  - name: setup cronjob for civicrm
+    # see https://docs.civicrm.org/sysadmin/en/latest/setup/jobs/
+    become: yes
+    cron:
+      name: "civicrm"
+      minute: "33"
+      job: "php /home/pacs/{{pac}}/users/{{user}}/bin/cv.phar api job.execute --user={{adminname}} --cwd=/home/pacs/{{pac}}/users/{{user}}/wordpress"

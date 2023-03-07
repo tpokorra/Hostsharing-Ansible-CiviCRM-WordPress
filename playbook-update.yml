@@ -105,13 +105,6 @@
       chdir: "/home/pacs/{{pac}}/users/{{user}}/wordpress"
       creates: "/home/pacs/{{pac}}/users/{{user}}/.civicrmactivated"
 
-  - name: download cv helper tool
-    become: yes
-    get_url:
-      url: https://download.civicrm.org/cv/cv.phar
-      dest: /home/pacs/{{pac}}/users/{{user}}/wordpress/cv.phar
-      mode: '0700'
-
   # need to activate site to avoid issue with upgrades: Call to undefined function trailingslashit()
   - name: put site out of maintenance mode
     become: yes
