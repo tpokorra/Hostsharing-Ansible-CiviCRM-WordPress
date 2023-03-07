@@ -19,6 +19,10 @@
   - name: setup the domain for the forms
     hsdomain.js: name="{{forms_domain}}" owner="{{pac}}-{{user}}" exists="true"
 
+  - name: Sleep to wait until the domain was created
+    pause:
+      seconds: 10
+
   - name: upload htaccess for the forms domain to allow specific queries
     become: yes
     template: dest="/home/pacs/{{pac}}/users/{{user}}/doms/{{forms_domain}}/.htaccess" src="templates/htaccess_forms" mode=0644
