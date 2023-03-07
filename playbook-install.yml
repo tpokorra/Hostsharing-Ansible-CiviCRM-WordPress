@@ -10,16 +10,6 @@
 
   tasks:
   #################################
-  ## setup the user, the domain, the database
-  #################################
-  - name: Create user, domain and database
-    import_tasks: tasks/hslamp.yml
-
-  - name: Sleep to avoid issue invalid user for temporary files
-    pause:
-      seconds: 10
-
-  #################################
   ## install useful helper scripts
   #################################
   - name: create bin directory

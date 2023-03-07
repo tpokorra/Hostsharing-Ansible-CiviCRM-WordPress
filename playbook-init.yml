@@ -1,0 +1,18 @@
+---
+- hosts: civicrm
+  become_user: "{{pac}}-{{user}}"
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    # see https://docs.ansible.com/ansible/latest/user_guide/become.html#risks-of-becoming-an-unprivileged-user
+    ansible_common_remote_group: "{{pac}}"
+
+  tasks:
+  #################################
+  ## setup the user, the domain, the database
+  #################################
+  - name: Create user, domain and database
+    import_tasks: tasks/hslamp.yml
+
+  - name: Sleep to avoid issue invalid user for temporary files
+    pause:
+      seconds: 10
