@@ -13,9 +13,6 @@
   ################################################
   ## add extensions for SEPA direct debit and BIC
   ################################################
-  - name: start task for sepa direct debit
-    debug: msg="start here"
-
   - name: install extension SEPA direct debit integration with civicrm
     become: yes
     become_user: "{{pac}}-{{user}}"
