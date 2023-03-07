@@ -24,6 +24,9 @@ civicrm:
       adminemail: no-reply@example.org
       sitename: "Mein CiviCRM"
 
+      # https://github.com/WordPress/WordPress/tags
+      wordpress_version: 6.1.1
+
       # see https://civicrm.org/download
       civicrm_version: 5.59.1
 

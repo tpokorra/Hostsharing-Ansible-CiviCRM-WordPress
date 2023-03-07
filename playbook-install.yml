@@ -48,7 +48,7 @@
     become: yes
     unarchive:
       creates: /home/pacs/{{pac}}/users/{{user}}/wordpress
-      src: https://de.wordpress.org/latest-de_DE.tar.gz
+      src: https://de.wordpress.org/wordpress-{{wordpress_version}}-de_DE.tar.gz
       remote_src: yes
       dest: /home/pacs/{{pac}}/users/{{user}}
 
